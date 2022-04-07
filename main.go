@@ -16,9 +16,8 @@ func main() {
 	aggregtr := aggregator.New(config)
 	workerList := make([]master.Worker, 0)
 
-	worker := worker.New(worker.SetupConfig(noOfReqForEachWrkr))
-
-	workerList = append(workerList, worker)
+	workerList = append(workerList, worker.New(worker.SetupConfig(noOfReqForEachWrkr)))
+	workerList = append(workerList, worker.New(worker.SetupConfig(noOfReqForEachWrkr)))
 
 	master := master.New(workerList, aggregtr)
 
