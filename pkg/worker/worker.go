@@ -1,7 +1,7 @@
 package worker
 
 import (
-	"go-test-perf/constants"
+	"go-test-perf/pkg/constants"
 	"net/http"
 	"net/http/httptrace"
 	"strings"
@@ -9,17 +9,28 @@ import (
 )
 
 type worker struct {
-	// TODO - is this the right place?
+	cnfg *config
 }
 
-func New() *worker {
-	return &worker{}
+func New(c *config) *worker {
+	return &worker{cnfg: c}
 }
 
-func (w *worker) Execute(hm constants.HttpMethod, url, body string) *Result {
+func (w *worker) Execute(hm constants.HttpMethod, url, body string) []*Result {
+	resultlist := make([]*Result, 0)
+	for i := 0; i < w.cnfg.noOfReq; i++ {
+		resultlist = append(resultlist, w.callUrl(hm, url, body))
+	}
+	return resultlist
+}
 
-	req, _ := http.NewRequest(string(hm), url, strings.NewReader(body))
-
+func (w *worker) callUrl(hm constants.HttpMethod, url, body string) *Result {
+	req, err := http.NewRequest(string(hm), url, strings.NewReader(body))
+	if err != nil {
+		return &Result{
+			Err: err,
+		}
+	}
 	var start time.Time
 	var timeToGetFirstByte time.Duration
 

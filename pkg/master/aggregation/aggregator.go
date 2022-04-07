@@ -1,7 +1,7 @@
 package aggregator
 
 import (
-	"go-test-perf/worker"
+	"go-test-perf/pkg/worker"
 	"math"
 )
 
@@ -22,6 +22,10 @@ func (a *aggregator) Check() (r *Result) {
 	minReqDuration := math.MaxFloat64
 	maxReqDuration := 0.0
 	for i := range a.wrkrRslts {
+		if a.wrkrRslts[i].Err != nil {
+			failCount++
+			continue
+		}
 		dur := a.wrkrRslts[i].TimeToGetFirstByte
 		if dur > a.cnfg.avgReqDur {
 			failCount++
@@ -33,10 +37,10 @@ func (a *aggregator) Check() (r *Result) {
 	avgReqDuration /= float64(len(a.wrkrRslts))
 
 	return &Result{
-		failCount:      failCount,
-		avgReqDuration: avgReqDuration,
-		minReqDuration: minReqDuration,
-		maxReqDuration: maxReqDuration,
+		FailCount:      failCount,
+		AvgReqDuration: avgReqDuration,
+		MinReqDuration: minReqDuration,
+		MaxReqDuration: maxReqDuration,
 	}
 }
 
