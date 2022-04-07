@@ -4,25 +4,17 @@ import (
 	"fmt"
 	"go-test-perf/constants"
 	"go-test-perf/master/aggregator"
+	"go-test-perf/worker"
 )
 
 type Worker interface {
-	Execute(hm constants.HttpMethod, url, body string) (res aggregator.WorkerResult)
+	Execute(hm constants.HttpMethod, url, body string) (*worker.Result)
 }
 
 type Aggregator interface {
 	Check() (r *aggregator.Result)
-	Add(res aggregator.WorkerResult)
+	Add(res *worker.Result)
 }
-
-// TODO - see how to have this without having import cycle
-// type AggregatorResult interface {
-// 	FailCount() int
-// 	AvgReqDur() float64
-// 	MinReqDuration() float64
-// 	MaxReqDuration() float64
-// }
-
 type master struct {
 	wkrs []Worker
 	aggr Aggregator

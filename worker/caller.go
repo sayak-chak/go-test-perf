@@ -2,7 +2,6 @@ package worker
 
 import (
 	"go-test-perf/constants"
-	"go-test-perf/master/aggregator"
 	"net/http"
 	"net/http/httptrace"
 	"strings"
@@ -17,7 +16,7 @@ func New() *worker {
 	return &worker{}
 }
 
-func (w *worker) Execute(hm constants.HttpMethod, url, body string) (res aggregator.WorkerResult) {
+func (w *worker) Execute(hm constants.HttpMethod, url, body string) *Result {
 
 	req, _ := http.NewRequest(string(hm), url, strings.NewReader(body))
 
@@ -34,10 +33,10 @@ func (w *worker) Execute(hm constants.HttpMethod, url, body string) (res aggrega
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
 	httpRes, err := http.DefaultTransport.RoundTrip(req)
 
-	return &result{
-		httpRes:            httpRes,
-		err:                err,
-		timeToGetFirstByte: float64(timeToGetFirstByte.Milliseconds()), //TODO - is this enough?
+	return &Result{
+		HttpRes:            httpRes,
+		Err:                err,
+		TimeToGetFirstByte: float64(timeToGetFirstByte.Milliseconds()), //TODO - is this enough?
 	}
 
 }

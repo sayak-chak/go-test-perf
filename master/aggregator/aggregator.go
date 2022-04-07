@@ -1,19 +1,13 @@
 package aggregator
 
 import (
+	"go-test-perf/worker"
 	"math"
-	"net/http"
 )
-
-type WorkerResult interface {
-	TimeToGetFirstByte() float64
-	Err() error
-	HttpResponse() *http.Response
-}
 
 type aggregator struct {
 	cnfg      *config
-	wrkrRslts []WorkerResult
+	wrkrRslts []worker.Result
 }
 
 func New(c *config) *aggregator {
@@ -28,7 +22,7 @@ func (a *aggregator) Check() (r *Result) {
 	minReqDuration := math.MaxFloat64
 	maxReqDuration := 0.0
 	for i := range a.wrkrRslts {
-		dur := a.wrkrRslts[i].TimeToGetFirstByte()
+		dur := a.wrkrRslts[i].TimeToGetFirstByte
 		if dur > a.cnfg.avgReqDur {
 			failCount++
 		}
@@ -46,6 +40,6 @@ func (a *aggregator) Check() (r *Result) {
 	}
 }
 
-func (a *aggregator) Add(res WorkerResult) {
-	a.wrkrRslts = append(a.wrkrRslts, res)
+func (a *aggregator) Add(res *worker.Result) {
+	a.wrkrRslts = append(a.wrkrRslts, *res)
 }
