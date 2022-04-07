@@ -45,7 +45,7 @@ func (m *master) RunTests(hm constants.HttpMethod, url string, body string) {
 	fmt.Println("Average req duration = ", testResults.AvgReqDuration)
 	fmt.Println("Min req duration = ", testResults.MinReqDuration)
 	fmt.Println("Max req duration = ", testResults.MaxReqDuration)
-	fmt.Println("Total req fired = ", len(m.wkrs))
+	fmt.Println("Total request count = ", testResults.TotalNoOfReq)
 	fmt.Println("--------------------------------------------------")
 
 }

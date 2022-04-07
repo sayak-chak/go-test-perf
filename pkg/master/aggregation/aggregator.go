@@ -17,33 +17,32 @@ func New(c *config) *aggregator {
 }
 
 func (a *aggregator) Check() (r *Result) {
-	failCount := 0
-	avgReqDuration := 0.0
-	minReqDuration := math.MaxFloat64
-	maxReqDuration := 0.0
-	for i := range a.wrkrRslts {
-		if a.wrkrRslts[i].Err != nil {
-			failCount++
-			continue
-		}
-		dur := a.wrkrRslts[i].TimeToGetFirstByte
-		if dur > a.cnfg.avgReqDur {
-			failCount++
-		}
-		minReqDuration = math.Min(minReqDuration, dur)
-		maxReqDuration = math.Max(maxReqDuration, dur)
-		avgReqDuration += dur
+	res := Result{
+		MinReqDuration: math.MaxFloat64,
+		TotalNoOfReq:   len(a.wrkrRslts),
 	}
-	avgReqDuration /= float64(len(a.wrkrRslts))
+	a.updateResult(&res)
 
-	return &Result{
-		FailCount:      failCount,
-		AvgReqDuration: avgReqDuration,
-		MinReqDuration: minReqDuration,
-		MaxReqDuration: maxReqDuration,
-	}
+	return &res
 }
 
 func (a *aggregator) Add(res *worker.Result) {
 	a.wrkrRslts = append(a.wrkrRslts, *res)
+}
+
+func (a *aggregator) updateResult(res *Result) { //TODO - refactor
+	for idx := range a.wrkrRslts {
+		if a.wrkrRslts[idx].Err != nil {
+			res.FailCount++
+			return
+		}
+		dur := a.wrkrRslts[idx].TimeToGetFirstByte
+		if dur > a.cnfg.avgReqDur {
+			res.FailCount++
+		}
+		res.MinReqDuration = math.Min(res.MinReqDuration, dur)
+		res.MaxReqDuration = math.Max(res.MaxReqDuration, dur)
+		res.AvgReqDuration += dur
+	}
+	res.AvgReqDuration /= float64((len(a.wrkrRslts)))
 }
