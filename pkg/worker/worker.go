@@ -12,14 +12,16 @@ type worker struct {
 	cnfg *config
 }
 
-func New(c *config) *worker {
+func Init(c *config) *worker {
 	return &worker{cnfg: c}
 }
 
-func (w *worker) Execute(hm constants.HttpMethod, url, body string) []*Result {
+func (w *worker) Execute() []*Result {
 	resultlist := make([]*Result, 0)
 	for i := 0; i < w.cnfg.noOfReq; i++ {
-		resultlist = append(resultlist, w.callUrl(hm, url, body))
+		for _, info := range w.cnfg.urlInfos {
+			resultlist = append(resultlist, w.callUrl(info.hm, info.url, info.body))
+		}
 	}
 	return resultlist
 }
@@ -28,6 +30,7 @@ func (w *worker) callUrl(hm constants.HttpMethod, url, body string) *Result {
 	req, err := http.NewRequest(string(hm), url, strings.NewReader(body))
 	if err != nil {
 		return &Result{
+			Url: url,
 			Err: err,
 		}
 	}
@@ -45,6 +48,7 @@ func (w *worker) callUrl(hm constants.HttpMethod, url, body string) *Result {
 	httpRes, err := http.DefaultTransport.RoundTrip(req)
 
 	return &Result{
+		Url:                url,
 		HttpRes:            httpRes,
 		Err:                err,
 		TimeToGetFirstByte: float64(timeToGetFirstByte.Milliseconds()), //TODO - is this enough?

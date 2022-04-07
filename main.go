@@ -7,20 +7,24 @@ import (
 	"go-test-perf/pkg/worker"
 )
 
-
 func main() {
 	avgReqDur := 1000.0 // millisecond
 	noOfReqForEachWrkr := 10
-	config := aggregator.SetupConfig(avgReqDur)
+	aggrConfig := aggregator.SetupConfig(avgReqDur)
 
-	aggregtr := aggregator.New(config)
+	aggregtr := aggregator.Init(aggrConfig)
 	workerList := make([]master.Worker, 0)
 
-	workerList = append(workerList, worker.New(worker.SetupConfig(noOfReqForEachWrkr)))
-	workerList = append(workerList, worker.New(worker.SetupConfig(noOfReqForEachWrkr)))
+	for i := 0; i < 2; i++ {
+		wrkrCnfg := worker.SetupConfig(noOfReqForEachWrkr)
+		wrkrCnfg.Update("http://www.google.com", "", constants.GET)
+		wrkrCnfg.Update("http://www.chess.com", "", constants.GET)
+		wrkr := worker.Init(wrkrCnfg)
+		workerList = append(workerList, wrkr)
+	}
 
-	master := master.New(workerList, aggregtr)
+	master := master.Init(workerList, aggregtr)
 
-	master.RunTests(constants.GET, "http://www.google.com", "")
+	master.ExecuteWorkers()
 
 }

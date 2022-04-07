@@ -2,14 +2,13 @@ package master
 
 import (
 	"fmt"
-	"go-test-perf/pkg/constants"
 	"go-test-perf/pkg/master/aggregation"
 	"go-test-perf/pkg/worker"
 	"sync"
 )
 
 type Worker interface {
-	Execute(hm constants.HttpMethod, url, body string) []*worker.Result
+	Execute() []*worker.Result
 }
 
 type Aggregator interface {
@@ -22,21 +21,21 @@ type master struct {
 	aggr Aggregator
 }
 
-func New(wrks []Worker, agr Aggregator) *master {
+func Init(wrks []Worker, agr Aggregator) *master {
 	return &master{
 		wkrs: wrks,
 		aggr: agr,
 	}
 }
 
-func (m *master) RunTests(hm constants.HttpMethod, url string, body string) {
+func (m *master) ExecuteWorkers() {
 	var workerWg sync.WaitGroup
 	var aggregatorWg sync.WaitGroup
 	results := make(chan worker.Result)
 
 	for i := range m.wkrs {
 		workerWg.Add(1)
-		go m.executeWorker(i, hm, url, body, &workerWg, results)
+		go m.executeWorker(i, &workerWg, results)
 	}
 
 	aggregatorWg.Add(1)
@@ -47,17 +46,20 @@ func (m *master) RunTests(hm constants.HttpMethod, url string, body string) {
 	aggregatorWg.Wait()
 
 	m.displayMetrics(m.aggr.Check())
-
 }
 
-func (*master) displayMetrics(testResults *aggregator.Result) {
-	fmt.Println("--------------------------------------------------")
-	fmt.Println("Failure count = ", testResults.FailCount)
-	fmt.Println("Average req duration = ", testResults.AvgReqDuration)
-	fmt.Println("Min req duration = ", testResults.MinReqDuration)
-	fmt.Println("Max req duration = ", testResults.MaxReqDuration)
-	fmt.Println("Total request count = ", testResults.TotalNoOfReq)
-	fmt.Println("--------------------------------------------------")
+func (*master) displayMetrics(aggrResults *aggregator.Result) {
+	urlList := aggrResults.UrlList()
+	for _, url := range urlList {
+		fmt.Println("--------------------------------------------------")
+		fmt.Println("For url", url)
+		fmt.Println("Failure count = ", aggrResults.FailCount(url))
+		fmt.Println("Average req duration = ", aggrResults.AvgReqDur(url))
+		fmt.Println("Min req duration = ", aggrResults.MinReqDur(url))
+		fmt.Println("Max req duration = ", aggrResults.MaxReqDur(url))
+		fmt.Println("Total request count = ", aggrResults.NoOfReq(url))
+		fmt.Println("--------------------------------------------------")
+	}
 }
 
 func (m *master) aggregate(wg *sync.WaitGroup, results <-chan worker.Result) {
@@ -73,11 +75,11 @@ func (m *master) aggregate(wg *sync.WaitGroup, results <-chan worker.Result) {
 	}
 }
 
-func (m *master) executeWorker(idx int, hm constants.HttpMethod, url string, body string, wg *sync.WaitGroup, results chan<- worker.Result) { //TODO - refactor
+func (m *master) executeWorker(idx int, wg *sync.WaitGroup, results chan<- worker.Result) { //TODO - refactor
 	defer wg.Done()
 
 	wkr := m.wkrs[idx]
-	wrkrResults := wkr.Execute(hm, url, body)
+	wrkrResults := wkr.Execute()
 	for i := range wrkrResults {
 		results <- *wrkrResults[i]
 	}

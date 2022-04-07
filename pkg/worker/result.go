@@ -5,6 +5,7 @@ import (
 )
 
 type Result struct {
+	Url                string
 	HttpRes            *http.Response
 	Err                error
 	TimeToGetFirstByte float64

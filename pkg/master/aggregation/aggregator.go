@@ -10,7 +10,7 @@ type aggregator struct {
 	wrkrRslts []worker.Result
 }
 
-func New(c *config) *aggregator {
+func Init(c *config) *aggregator {
 	return &aggregator{
 		cnfg: c,
 	}
@@ -18,8 +18,7 @@ func New(c *config) *aggregator {
 
 func (a *aggregator) Check() (r *Result) {
 	res := Result{
-		MinReqDuration: math.MaxFloat64,
-		TotalNoOfReq:   len(a.wrkrRslts),
+		urls: make(map[string]*urlResult),
 	}
 	a.updateResult(&res)
 
@@ -32,17 +31,30 @@ func (a *aggregator) Add(res *worker.Result) {
 
 func (a *aggregator) updateResult(res *Result) { //TODO - refactor
 	for idx := range a.wrkrRslts {
+
+		url := a.wrkrRslts[idx].Url
+		if _, present := res.urls[url]; !present {
+			res.urls[url] = &urlResult{
+				minReqDuration: math.MaxFloat64,
+			}
+		}
+		currRes := res.urls[url]
+		currRes.noOfReq++
+
 		if a.wrkrRslts[idx].Err != nil {
-			res.FailCount++
+			currRes.failCount++
 			return
 		}
 		dur := a.wrkrRslts[idx].TimeToGetFirstByte
 		if dur > a.cnfg.avgReqDur {
-			res.FailCount++
+			currRes.failCount++
 		}
-		res.MinReqDuration = math.Min(res.MinReqDuration, dur)
-		res.MaxReqDuration = math.Max(res.MaxReqDuration, dur)
-		res.AvgReqDuration += dur
+		currRes.minReqDuration = math.Min(currRes.minReqDuration, dur)
+		currRes.maxReqDuration = math.Max(currRes.maxReqDuration, dur)
+		currRes.cumulativeReqDuration += dur
 	}
-	res.AvgReqDuration /= float64((len(a.wrkrRslts)))
+
+	for url := range res.urls {
+		res.urls[url].avgReqDuration = res.urls[url].cumulativeReqDuration/float64(res.urls[url].noOfReq)
+	}
 }
